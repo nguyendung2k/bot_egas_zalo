@@ -1,6 +1,6 @@
-﻿import test from "node:test";
+import test from "node:test";
 import assert from "node:assert/strict";
-import { formatWarningChanges, snapshotsEqual } from "../dist/bot/warning-monitor.js";
+import { formatWarningChanges, snapshotsEqual } from "../../dist/bot/warning-monitor.js";
 
 const entry = (maKhach, tenKhach, value) => ({
     maKhach,

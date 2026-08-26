@@ -12,7 +12,8 @@
                     "service:install:polling":  "node dist/install/install-service.js polling",
                     "service:install:monitor":  "node dist/install/install-service.js monitor",
                     "service:uninstall:polling":  "node dist/install/uninstall-service.js polling",
-                    "service:uninstall:monitor":  "node dist/install/uninstall-service.js monitor"
+                    "service:uninstall:monitor":  "node dist/install/uninstall-service.js monitor",
+                    "test":  "node --test test/unit/**/*.test.mjs"
                 },
     "dependencies":  {
                          "dotenv":  "^17.4.2",

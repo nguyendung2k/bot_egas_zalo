@@ -1,3 +1,8 @@
 ﻿.env
 node_modules/
 dist/
+write-polling.cjs
+write-polling.mjs
+*.html
+*.log
+test-getupdates.mjs
