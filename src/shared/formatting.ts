@@ -1,5 +1,5 @@
-﻿import type { Customer, Report, ReportCounts, WarningResult } from "./domain.js";
-import { WARNING_LIMIT, customerGroup, warningValue } from "./domain.js";
+﻿import type { Customer, Report, ReportCounts, WarningResult } from "../egas/domain.js";
+import { WARNING_LIMIT, customerGroup, warningValue } from "../egas/domain.js";
 
 export const pad = (value: number): string => String(value).padStart(2, "0");
 export const formatDateTime = (date: Date): string =>

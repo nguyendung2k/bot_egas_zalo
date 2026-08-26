@@ -1,4 +1,4 @@
-﻿import { runTuoiNoReport } from "./tuoi-no-service.js";
+﻿import { runTuoiNoReport } from "../egas/report-service.js";
 
 try {
     console.log(JSON.stringify(await runTuoiNoReport(), null, 2));

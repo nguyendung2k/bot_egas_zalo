@@ -1,6 +1,4 @@
-﻿import "./env.js";
-import { loadConfig } from "./config.js";
-import type { AppConfig } from "./config.js";
+﻿import "../shared/env.js";
 
 const required = (name: string): string => {
     const value = process.env[name]?.trim();
@@ -10,13 +8,10 @@ const required = (name: string): string => {
 
 export interface ZaloConfig {
     readonly botToken: string;
-    readonly webhookSecret: string;
     readonly port: number;
 }
 
-export const loadZaloConfig = (): ZaloConfig & { egas: AppConfig } => ({
+export const loadZaloConfig = (): ZaloConfig => ({
     botToken: required("ZALO_BOT_TOKEN"),
-    webhookSecret: required("ZALO_WEBHOOK_SECRET"),
     port: Number(process.env.PORT ?? 3000),
-    egas: loadConfig(),
 });

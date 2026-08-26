@@ -1,6 +1,6 @@
-﻿import { runTuoiNoReport, normalizeSearchText } from "./tuoi-no-service.js";
-import { WARNING_LIMIT, customerGroup, type Customer } from "./domain.js";
-import { sendZaloText } from "./zalo-sender.js";
+﻿import { runTuoiNoReport, normalizeSearchText } from "../egas/report-service.js";
+import { WARNING_LIMIT, customerGroup, type Customer } from "../egas/domain.js";
+import { sendZaloText } from "./sender.js";
 
 export const HELP_TEXT = [
     "🤖 HƯỚNG DẪN SỬ DỤNG BOT CÔNG NỢ EGAS",
@@ -58,11 +58,14 @@ interface ParsedCommand {
 
 export const unwrapMessageEvent = (body: unknown): unknown => {
     if (!body || typeof body !== "object") return body;
-    const event = body as { result?: unknown; message?: unknown };
-    if (event.result && typeof event.result === "object") {
-        const result = event.result as { message?: unknown };
+    const obj = body as { result?: unknown; message?: unknown };
+    // { result: { message: {...} } } — full API response
+    if (obj.result && typeof obj.result === "object") {
+        const result = obj.result as { message?: unknown };
         if (result.message && typeof result.message === "object") return result.message;
     }
+    // { message: {...}, event_name: "..." } — single update/event object
+    if (obj.message && typeof obj.message === "object") return obj.message;
     return body;
 };
 
@@ -145,20 +148,17 @@ const formatCustomerLine = (customer: Customer): string => {
     ].join("\n");
 };
 
-const sendCustomerMatches = async (
-    botToken: string,
-    chatId: string,
-    customers: Customer[],
-    query: string,
-): Promise<void> => {
-    if (!customers.length) {
-        await sendZaloText(botToken, chatId, `Không tìm thấy khách nào khớp "${query}".`);
-        return;
+/** Gộp tat ca khach hang match thanh 1 tin nhan duy nhat */
+const buildCustomerMatchesText = (customers: Customer[], query: string): string => {
+    if (!customers.length) return `Không tìm thấy khách nào khớp "${query}".`;
+    const lines = [`🔎 Tìm thấy ${customers.length} khách khớp "${query}":`, ""];
+    const display = customers.slice(0, 10);
+    for (const customer of display) {
+        lines.push(formatCustomerLine(customer));
+        lines.push("");
     }
-    await sendZaloText(botToken, chatId, `🔎 Tìm thấy ${customers.length} khách khớp "${query}":`);
-    for (const customer of customers.slice(0, 10)) {
-        await sendZaloText(botToken, chatId, formatCustomerLine(customer));
-    }
+    if (customers.length > 10) lines.push(`… và ${customers.length - 10} khách nữa.`);
+    return lines.join("\n").trim();
 };
 
 export const extractChatId = (body: unknown): string | null => {
@@ -180,7 +180,6 @@ export const extractText = (body: unknown): string | null => {
     return stripped.trim() ? stripped.trim() : null;
 };
 
-// Timeout wrapper
 const withTimeout = <T>(promise: Promise<T>, ms: number, label: string): Promise<T> => {
     return Promise.race([
         promise,
@@ -190,7 +189,7 @@ const withTimeout = <T>(promise: Promise<T>, ms: number, label: string): Promise
 
 export const handleZaloCommand = async (botToken: string, chatId: string, text: string): Promise<void> => {
     const parsed = parseCommand(text);
-    console.log(`[CMD] Lệnh: intent=${parsed.intent}, query=${parsed.query ?? "none"}, text="${text}"`);
+    console.log(`[CMD] Lenh: intent=${parsed.intent}, query=${parsed.query ?? "none"}, text="${text}"`);
 
     if (parsed.intent === "unknown") {
         await sendZaloText(botToken, chatId, `Mình chưa hiểu yêu cầu.\n\n${HELP_TEXT}`);
@@ -208,21 +207,20 @@ export const handleZaloCommand = async (botToken: string, chatId: string, text: 
 
     inFlight.add(chatId);
     try {
-        await sendZaloText(botToken, chatId, "⏳ Đang lấy báo cáo EGAS, vui lòng đợi...");
-        console.log(`[CMD] Bắt đầu lấy báo cáo...`);
-
         const result = await withTimeout(
             runTuoiNoReport(new Date(), parsed.intent === "warning" ? undefined : parsed.query),
             60_000,
-            "lấy báo cáo EGAS",
+            "lay bao cao EGAS",
         );
 
-        console.log(`[CMD] Báo cáo thành công: ${result.customers?.length ?? 0} khách`);
+        console.log(`[CMD] Bao cao thanh cong: ${result.customers?.length ?? 0} khach`);
 
         if (!result.success || !result.customers || !result.counts || !result.report || !result.warning) {
             await sendZaloText(botToken, chatId, `❌ Không lấy được báo cáo:\n${result.error ?? "Lỗi không xác định."}`);
             return;
         }
+
+        let responseText: string;
 
         if (parsed.query && normalizeSearchText(parsed.query)) {
             if (parsed.intent === "warning") {
@@ -233,36 +231,35 @@ export const handleZaloCommand = async (botToken: string, chatId: string, text: 
                         return value > 0 && value <= WARNING_LIMIT;
                     })
                     : [];
-                if (!warningOnly.length) {
-                    await sendZaloText(botToken, chatId, `Không có cảnh báo nào cho khách khớp "${parsed.query}".`);
-                } else {
-                    await sendCustomerMatches(botToken, chatId, warningOnly, parsed.query);
-                }
-                return;
+                responseText = buildCustomerMatchesText(warningOnly, parsed.query);
+            } else {
+                responseText = buildCustomerMatchesText(result.customers, parsed.query);
             }
-            await sendCustomerMatches(botToken, chatId, result.customers, parsed.query);
-            return;
-        }
-        if (parsed.intent === "warning") {
-            await sendZaloText(botToken, chatId, result.warning.message);
-            return;
+        } else if (parsed.intent === "warning") {
+            responseText = result.warning.message;
+        } else {
+            // Gop tat ca thanh 1 tin nhan
+            const parts: string[] = [];
+            parts.push(`📊 Tổng quan: ${result.counts.total} khách còn nợ`);
+            parts.push(`🔹 Đặc biệt: ${result.counts.special}`);
+            parts.push(`🔹 Hawee: ${result.counts.hawee}`);
+            parts.push(`🔹 Khác: ${result.counts.other}`);
+            parts.push("");
+            parts.push(result.report.special);
+            parts.push("");
+            parts.push(result.report.hawee);
+            parts.push("");
+            parts.push(result.report.other);
+            parts.push("");
+            parts.push(result.warning.message);
+            responseText = parts.join("\n");
         }
 
-        // Gửi kết quả
-        await sendZaloText(botToken, chatId, [
-            `📊 Tổng quan: ${result.counts.total} khách còn nợ`,
-            `🔹 Đặc biệt: ${result.counts.special}`,
-            `🔹 Hawee: ${result.counts.hawee}`,
-            `🔹 Khác: ${result.counts.other}`,
-        ].join("\n"));
-        await sendZaloText(botToken, chatId, result.report.special);
-        await sendZaloText(botToken, chatId, result.report.hawee);
-        await sendZaloText(botToken, chatId, result.report.other);
-        await sendZaloText(botToken, chatId, result.warning.message);
-        console.log(`[CMD] Đã gửi kết quả`);
+        await sendZaloText(botToken, chatId, responseText);
+        console.log(`[CMD] Da gui ket qua`);
     } catch (error: unknown) {
         const detail = error instanceof Error ? error.message : String(error);
-        console.error(`[CMD] Lỗi: ${detail}`);
+        console.error(`[CMD] Loi: ${detail}`);
         try {
             await sendZaloText(botToken, chatId, `❌ Lỗi khi lấy báo cáo:\n${detail}`);
         } catch { /* ignore */ }

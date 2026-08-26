@@ -32,11 +32,12 @@ export const callBotApi = async (botToken: string, method: string, payload: unkn
     });
     const data = await response.json().catch(() => null) as ZaloApiResponse | null;
     if (!response.ok || !data?.ok) {
-        throw new Error(`Zalo Bot API ${method} thất bại (${response.status}): ${JSON.stringify(data ?? {})}`);
+        throw new Error(`Zalo Bot API ${method} that bai (${response.status}): ${JSON.stringify(data ?? {})}`);
     }
     return data;
 };
 
+/** Gui 1 tin nhan. Neu vuot 2000 ky tu se tu dong chunk. */
 export const sendZaloText = async (botToken: string, chatId: string, text: string): Promise<void> => {
     for (const chunk of chunkText(text)) {
         await callBotApi(botToken, "sendMessage", { chat_id: chatId, text: chunk });

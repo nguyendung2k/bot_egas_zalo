@@ -1,7 +1,8 @@
-﻿import { loadConfig } from "./config.js";
+﻿import "../shared/env.js";
+import { loadConfig } from "./config.js";
 import type { Customer, ReportCounts, WarningResult } from "./domain.js";
-import { fetchCustomers } from "./egas-report-client.js";
-import { createReport, createWarning, formatDateTime } from "./formatting.js";
+import { fetchCustomers } from "./report-client.js";
+import { createReport, createWarning, formatDateTime } from "../shared/formatting.js";
 
 export interface TuoiNoResult {
     success: boolean;

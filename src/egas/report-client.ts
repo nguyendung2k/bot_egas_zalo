@@ -1,7 +1,7 @@
 ﻿import type { AppConfig } from "./config.js";
 import type { Customer } from "./domain.js";
-import { pad } from "./formatting.js";
-import { loginEgas } from "./egas-authenticator.js";
+import { pad } from "../shared/formatting.js";
+import { loginEgas } from "./authenticator.js";
 import { getBrowser } from "./browser-pool.js";
 
 const FALLBACK_URL = "https://egas.petrolimex.com.vn";
@@ -119,8 +119,6 @@ const tryFetchFromUrl = async (baseUrl: string, username: string, password: stri
 
 export const fetchCustomers = async (config: AppConfig, fromDate: Date, toDate: Date): Promise<Customer[]> => {
     const browser = await getBrowser(config.headless, config.slowMo);
-
-    // Nếu primary đã fail quá nhiều lần → skip thẳng fallback
     const tryPrimary = primaryFailedCount < MAX_PRIMARY_FAILS;
     const urls = lastWorkingUrl
         ? [lastWorkingUrl, lastWorkingUrl === config.baseUrl ? FALLBACK_URL : config.baseUrl]

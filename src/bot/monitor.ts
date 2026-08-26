@@ -1,9 +1,9 @@
-﻿import "./env.js";
-import { runTuoiNoReport } from "./tuoi-no-service.js";
-import { WARNING_LIMIT, customerGroup, type Customer, warningValue } from "./domain.js";
-import { formatDateTime, formatMoney } from "./formatting.js";
-import { sendZaloText } from "./zalo-sender.js";
-import { loadZaloConfig } from "./zalo-config.js";
+﻿import "../shared/env.js";
+import { runTuoiNoReport } from "../egas/report-service.js";
+import { WARNING_LIMIT, customerGroup, type Customer, warningValue } from "../egas/domain.js";
+import { formatDateTime, formatMoney } from "../shared/formatting.js";
+import { sendZaloText } from "./sender.js";
+import { loadZaloConfig } from "./config.js";
 
 const chatId = process.env.ZALO_MONITOR_CHAT_ID?.trim();
 if (!chatId) throw new Error("Thiếu ZALO_MONITOR_CHAT_ID.");
