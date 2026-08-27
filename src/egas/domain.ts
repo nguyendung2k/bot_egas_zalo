@@ -8,6 +8,7 @@ export const HAWEE_CODES: ReadonlySet<string> = new Set([
 
 export const EXCLUDED_CODE = "221.802";
 export const WARNING_LIMIT = 2_000_000;
+export const CRITICAL_LIMIT = 150_000;
 
 export interface Customer {
     maKhach: string;

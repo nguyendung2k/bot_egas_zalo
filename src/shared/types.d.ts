@@ -43,8 +43,8 @@ declare module "node-windows" {
 
     export class Service extends EventEmitter {
         constructor(options: ServiceOptions);
-        install(): void;
-        uninstall(): void;
+        install(dir?: string): void;
+        uninstall(waitTime?: number): void;
         start(): void;
         stop(): void;
     }

@@ -12,14 +12,13 @@ if (mode !== "polling" && mode !== "monitor") {
 }
 
 const isMonitor = mode === "monitor";
-
-// Ten goc dung khi cai dat cu
 const serviceName = isMonitor ? "ZaloBot EGAS AMS Monitor" : "ZaloBot EGAS Polling";
 
-// node-windows: this.root = path.dirname(script), this._exe = name.replace(/[^\w]/gi,'').toLowerCase()
-// Can trao script path vao thu muc daemon cu de node-windows tim duoc daemon exe
-const daemonDir = path.resolve(__dirname, "../../dist/scripts/daemon");
-const scriptPath = path.join(daemonDir, "x.js"); // bat ky file nao trong daemon dir
+// Matches daemonBase used in install-service.ts; node-windows appends "daemon"
+// to the script's dirname, so point the script at .daemon/ to resolve .daemon/daemon/
+const projectRoot = path.resolve(__dirname, "../..");
+const daemonBase = path.join(projectRoot, ".daemon");
+const scriptPath = path.join(daemonBase, "x.js");
 
 const svc = new Service({
     name: serviceName,

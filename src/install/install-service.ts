@@ -1,4 +1,5 @@
 ﻿import { Service } from "node-windows";
+import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -15,6 +16,10 @@ const isMonitor = mode === "monitor";
 const scriptPath = path.resolve(__dirname, `../bot/${isMonitor ? "monitor" : "polling"}.js`);
 const projectRoot = path.resolve(__dirname, "../..");
 const serviceName = isMonitor ? "ZaloBot EGAS AMS Monitor" : "ZaloBot EGAS Polling";
+
+// node-windows noi them "daemon" vao duong dan nay -> .daemon/daemon
+const daemonBase = path.join(projectRoot, ".daemon");
+fs.mkdirSync(path.join(daemonBase, "daemon"), { recursive: true });
 
 const svc = new Service({
     name: serviceName,
@@ -41,4 +46,4 @@ svc.on("alreadyinstalled", () => {
 });
 svc.on("start", () => console.log(`Service "${serviceName}" started.`));
 svc.on("error", (err: Error) => console.error(`Service error:`, err));
-svc.install();
+svc.install(daemonBase);

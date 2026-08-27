@@ -1,6 +1,6 @@
 import "../shared/env.js";
 import { runTuoiNoReport } from "../egas/report-service.js";
-import { WARNING_LIMIT } from "../egas/domain.js";
+import { CRITICAL_LIMIT, WARNING_LIMIT } from "../egas/domain.js";
 import { formatDateTime, formatMoney } from "../shared/formatting.js";
 import { sendZaloText } from "./sender.js";
 import { loadZaloConfig } from "./config.js";
@@ -19,6 +19,10 @@ const formatFullSnapshot = (title: string, snapshot: WarningSnapshot): string =>
     if (!snapshot.size) {
         lines.push("Không có khách nào có công nợ nhỏ hơn hoặc bằng 2.000.000 đồng.");
     } else {
+        const critical = [...snapshot.values()].filter((entry) => entry.value <= CRITICAL_LIMIT);
+        if (critical.length) {
+            lines.push(`🛑 DỪNG CẤP HÀNG (công nợ <= ${formatMoney(CRITICAL_LIMIT)} đ): ${critical.length} khách`, "");
+        }
         for (const entry of snapshot.values()) {
             lines.push(formatWarningEntry(entry));
         }

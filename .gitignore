@@ -1,6 +1,7 @@
 ﻿.env
 node_modules/
 dist/
+.daemon/
 write-polling.cjs
 write-polling.mjs
 *.html

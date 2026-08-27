@@ -1,5 +1,5 @@
 ﻿import type { Customer, Report, ReportCounts, WarningResult } from "../egas/domain.js";
-import { WARNING_LIMIT, customerGroup, warningValue } from "../egas/domain.js";
+import { CRITICAL_LIMIT, WARNING_LIMIT, customerGroup, warningValue } from "../egas/domain.js";
 
 export const pad = (value: number): string => String(value).padStart(2, "0");
 export const formatDateTime = (date: Date): string =>
@@ -47,6 +47,20 @@ export const createWarning = (customers: Customer[], fromDate: Date, toDate: Dat
     });
     if (!warnings.length) return { count: 0, message: ["⚠️ CẢNH BÁO CÔNG NỢ", "", "Không có khách hàng có công nợ", `≤ ${formatMoney(WARNING_LIMIT)} đồng.`].join("\n") };
     const lines = ["⚠️ CẢNH BÁO CÔNG NỢ", `📅 ${formatDateTime(fromDate)} - ${formatDateTime(toDate)}`, `💰 Ngưỡng: ≤ ${formatMoney(WARNING_LIMIT)} đồng`, ""];
-    for (const customer of warnings) lines.push(`🏢 ${customer.tenKhach}`, `🔢 Mã: ${customer.maKhach}`, `💰 Tồn cuối: ${formatMoney(warningValue(customer))}`, "");
+    const critical = warnings.filter((customer) => warningValue(customer) <= CRITICAL_LIMIT);
+    if (critical.length) {
+        lines.push(`🛑 DỪNG CẤP HÀNG - công nợ <= ${formatMoney(CRITICAL_LIMIT)} đồng (${critical.length} khách):`);
+        for (const customer of critical) lines.push(`   • ${customer.tenKhach} (${customer.maKhach}): ${formatMoney(warningValue(customer))} đ`);
+        lines.push("");
+    }
+    for (const customer of warnings) {
+        const value = warningValue(customer);
+        lines.push(
+            `${value <= CRITICAL_LIMIT ? "🛑" : "🏢"} ${customer.tenKhach}`,
+            `🔢 Mã: ${customer.maKhach}`,
+            `💰 Tồn cuối: ${formatMoney(value)}${value <= CRITICAL_LIMIT ? " - DỪNG CẤP HÀNG" : ""}`,
+            "",
+        );
+    }
     return { count: warnings.length, message: lines.join("\n").trim() };
 };

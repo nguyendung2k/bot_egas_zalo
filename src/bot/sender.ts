@@ -2,20 +2,26 @@
 const MAX_TEXT_LENGTH = 2000;
 
 export const chunkText = (text: string, maxLength: number = MAX_TEXT_LENGTH): string[] => {
+    if (!text.trim()) return [];
     if (text.length <= maxLength) return [text];
     const chunks: string[] = [];
     let remaining = text;
     while (remaining.length > 0) {
         if (remaining.length <= maxLength) {
-            chunks.push(remaining);
+            if (remaining.trim()) chunks.push(remaining);
             break;
         }
         let cut = remaining.lastIndexOf("\n", maxLength);
         if (cut <= 0) cut = maxLength;
-        chunks.push(remaining.slice(0, cut).trimEnd());
+        // Khong cat giua cap surrogate (emoji chiem 2 UTF-16 unit)
+        const high = remaining.charCodeAt(cut - 1);
+        const low = remaining.charCodeAt(cut);
+        if (high >= 0xd800 && high <= 0xdbff && low >= 0xdc00 && low <= 0xdfff) cut -= 1;
+        const chunk = remaining.slice(0, cut).trimEnd();
+        if (chunk) chunks.push(chunk);
         remaining = remaining.slice(cut).trimStart();
     }
-    return chunks.length > 0 ? chunks : [""];
+    return chunks;
 };
 
 export interface ZaloApiResponse {

@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { formatWarningChanges, snapshotsEqual } from "../../dist/bot/warning-monitor.js";
+import { formatWarningChanges, formatWarningEntry, snapshotsEqual } from "../../dist/bot/warning-monitor.js";
 
 const entry = (maKhach, tenKhach, value) => ({
     maKhach,
@@ -48,4 +48,20 @@ test("hien thi khach moi vao nguong canh bao", () => {
 
     assert.equal(changes.length, 1);
     assert.match(changes[0], /Khach moi/);
+});
+
+test("bao dung cap hang khi cong no <= 150k", () => {
+    assert.match(formatWarningEntry(entry("221.004", "Khach can kiet", 99_000)), /DỪNG CẤP HÀNG/);
+    assert.match(formatWarningEntry(entry("221.005", "Khach dung nguong", 150_000)), /DỪNG CẤP HÀNG/);
+    assert.doesNotMatch(formatWarningEntry(entry("221.006", "Khach du han muc", 150_001)), /DỪNG CẤP HÀNG/);
+});
+
+test("canh bao dung cap hang khi cong no tut xuong <= 150k", () => {
+    const changes = formatWarningChanges(
+        new Map([["221.004", entry("221.004", "Khach tut", 250_000)]]),
+        new Map([["221.004", entry("221.004", "Khach tut", 150_000)]]),
+    );
+
+    assert.equal(changes.length, 1);
+    assert.match(changes[0], /DỪNG CẤP HÀNG/);
 });

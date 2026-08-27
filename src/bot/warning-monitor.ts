@@ -1,4 +1,4 @@
-﻿import { type Customer, customerGroup, warningValue } from "../egas/domain.js";
+﻿import { type Customer, CRITICAL_LIMIT, customerGroup, warningValue } from "../egas/domain.js";
 import { formatMoney } from "../shared/formatting.js";
 
 export interface WarningEntry {
@@ -36,15 +36,18 @@ export const snapshotsEqual = (a: WarningSnapshot, b: WarningSnapshot): boolean 
 };
 
 export const formatWarningEntry = (entry: WarningEntry): string =>
-    `• ${entry.tenKhach} (${entry.maKhach}): ${formatMoney(entry.value)} đ`;
+    entry.value <= CRITICAL_LIMIT
+        ? `🛑 ${entry.tenKhach} (${entry.maKhach}): ${formatMoney(entry.value)} đ - DỪNG CẤP HÀNG`
+        : `• ${entry.tenKhach} (${entry.maKhach}): ${formatMoney(entry.value)} đ`;
 
 export const formatWarningChanges = (old: WarningSnapshot, current: WarningSnapshot): string[] => {
     const lines: string[] = [];
     for (const [key, entry] of current) {
         const prev = old.get(key);
+        const critical = entry.value <= CRITICAL_LIMIT ? " 🛑 DỪNG CẤP HÀNG" : "";
         if (!prev) lines.push(`🆕 ${formatWarningEntry(entry)}`);
         else if (prev.value !== entry.value) {
-            lines.push(`🔁 ${entry.tenKhach} (${entry.maKhach}): ${formatMoney(prev.value)} → ${formatMoney(entry.value)} đ`);
+            lines.push(`🔁 ${entry.tenKhach} (${entry.maKhach}): ${formatMoney(prev.value)} → ${formatMoney(entry.value)} đ${critical}`);
         }
     }
     return lines;
